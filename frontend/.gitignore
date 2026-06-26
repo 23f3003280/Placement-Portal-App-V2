@@ -39,10 +39,5 @@ __screenshots__/
 *.timestamp-*-*.mjs
 
 
-#### src
-src/components/AdminDashboard.vue
-src/components/AdminLogin.vue
-src/components/UserDashboard.vue
-src/components/UserLogin.vue
-src/components/UserRegister.vue
+
 
