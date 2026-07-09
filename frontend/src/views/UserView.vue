@@ -1,45 +1,34 @@
 <template>
-<div>
-  <div v-if="!isLoggedIn">
-      <UserLogin v-if="!showRegister" @logged-in="handlelogin" @register-here="showRegister =true"/>
-      <UserRegister v-else  @registered="handleRegistration" @login-here="showRegister =false"/>
+  <div class="container py-4">
+    <h2>User</h2>
+    <div class="row">
+      <div class="col-12">
+        <UserLogin v-if="!isLogged" @logged="onLogged" />
+        <div v-else>
+          <router-view />
+        </div>
+      </div>
+    </div>
   </div>
-
-<div v-else>
-    <UserDashboard  />
-</div>
-
-
-</div>
-
 </template>
 
-<script>
-import UserDashboard from '@/components/UserDashboard.vue';
+<script setup>
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import UserLogin from '../components/UserLogin.vue'
-import UserRegister from '../components/UserRegister.vue'
 
-export default {
-  name: 'UserView',
-  components: {
-    UserLogin,
-    UserDashboard,
-    UserRegister
-  },
-  data () {
-    return {
-      isLoggedIn: false,
-      showRegister: true
-    }
-  },
-  methods: {
-    handleRegistration() {
-      this.showRegister = false;
-      this.isLoggedIn = true;
-    },
-    handlelogin() {
-      this.isLoggedIn = true;
-    }
+const isLogged = ref(false)
+const router = useRouter()
+
+function onLogged(role = 'student') {
+  isLogged.value = true
+  if (role === 'company') {
+    router.push('/user/company')
+  } else {
+    router.push('/user')
   }
 }
 </script>
+
+<style scoped>
+</style>

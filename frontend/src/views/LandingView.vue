@@ -1,31 +1,16 @@
 <template>
-<h2> welcome </h2>
-<div>
-
-
-    <div>
-        <div @click="$router.push('/admin')">
-            Admin View
-        </div>
+  <div class="container py-5">
+    <h1 class="mb-4">Placement Portal</h1>
+    <p>Choose your role to continue</p>
+    <div class="d-flex gap-3">
+      <router-link to="/admin" class="btn btn-primary">Admin</router-link>
+      <router-link to="/user" class="btn btn-secondary">Student / Company</router-link>
     </div>
-
-
-    <div>
-        <div @click="$router.push('/user')">
-            User View
-        </div>
-    </div>
-
-</div>
-
+  </div>
 </template>
 
-
-
-<script>
-export default {
-    name: 'LandingView'
-}
+<script setup>
 </script>
 
-
+<style scoped>
+</style>
