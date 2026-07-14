@@ -1,6 +1,9 @@
 <template>
   <div class="card mb-4">
-    <div class="card-header">Student Profile</div>
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <span>Student Profile</span>
+      <button class="btn btn-outline-secondary btn-sm" @click="goBack">Back</button>
+    </div>
     <div class="card-body">
       <form @submit.prevent="saveProfile">
         <div class="mb-3">
@@ -42,7 +45,10 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router' // Import useRouter
 import api from '../services/api'
+
+const router = useRouter() // Initialize router
 
 const profile = ref({
   name: '',
@@ -106,6 +112,10 @@ async function uploadResume(event) {
   } catch (e) {
     alert(e.response?.data?.message || 'Upload failed')
   }
+}
+
+function goBack() {
+  router.back()
 }
 
 onMounted(loadProfile)

@@ -1,13 +1,60 @@
 <template>
   <div class="admin-dashboard">
     <h3 class="mb-4">Admin Dashboard</h3>
-
+    
     <div class="row mb-4">
       <div class="col-md-2" v-for="card in cards" :key="card.label">
         <div class="card text-center border-primary h-100">
           <div class="card-body">
             <h6 class="card-title text-secondary">{{ card.label }}</h6>
             <p class="display-6 mb-0">{{ card.value }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row gy-4 mb-4">
+      <div class="col-lg-6">
+        <div class="card h-100">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Drive Status Overview</span>
+            <span class="text-muted small">Pending / Approved / Rejected</span>
+          </div>
+          <div class="card-body">
+            <div class="row align-items-center">
+              <div class="col-md-8">
+                <canvas ref="chartCanvas" height="220"></canvas>
+              </div>
+              <div class="col-md-4">
+                <ul class="list-unstyled mb-0">
+                  <li class="mb-2"><span class="badge bg-warning me-2">Pending</span>{{ chartCounts.pending }}</li>
+                  <li class="mb-2"><span class="badge bg-success me-2">Approved</span>{{ chartCounts.approved }}</li>
+                  <li><span class="badge bg-danger me-2">Rejected</span>{{ chartCounts.rejected }}</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="card h-100">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Company Registration Overview</span>
+            <span class="text-muted small">Pending / Approved / Rejected</span>
+          </div>
+          <div class="card-body">
+            <div class="row align-items-center">
+              <div class="col-md-8">
+                <canvas ref="companyChartCanvas" height="220"></canvas>
+              </div>
+              <div class="col-md-4">
+                <ul class="list-unstyled mb-0">
+                  <li class="mb-2"><span class="badge bg-warning me-2">Pending</span>{{ companyChartCounts.pending }}</li>
+                  <li class="mb-2"><span class="badge bg-success me-2">Approved</span>{{ companyChartCounts.approved }}</li>
+                  <li><span class="badge bg-danger me-2">Rejected</span>{{ companyChartCounts.rejected }}</li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -100,13 +147,24 @@
         <div v-if="selectedDrive" class="card mb-4 border-primary">
           <div class="card-header">Drive Review</div>
           <div class="card-body">
-            <p><strong>Company:</strong> {{ selectedDrive.company_name || 'Unknown' }}</p>
-            <p><strong>Title:</strong> {{ selectedDrive.title }}</p>
-            <p><strong>Description:</strong> {{ selectedDrive.description || '—' }}</p>
-            <p><strong>Eligibility:</strong> {{ selectedDrive.eligibility || '—' }}</p>
-            <p><strong>Drive Date:</strong> {{ formatDate(selectedDrive.drive_date) }}</p>
-            <p><strong>Created:</strong> {{ formatDate(selectedDrive.created_at) }}</p>
-            <p><strong>Application Deadline:</strong> {{ formatDate(selectedDrive.application_deadline) }}</p>
+            <div class="row g-4">
+              <div class="col-md-5">
+                <h6 class="text-uppercase text-secondary">Company Profile</h6>
+                <p><strong>Name:</strong> {{ selectedDrive.company_name || 'Unknown' }}</p>
+                <p><strong>Status:</strong> {{ selectedDrive.company?.approved ? 'Approved' : 'Pending Approval' }}</p>
+                <p><strong>HR Contact:</strong> {{ selectedDrive.company?.hr_contact || '—' }}</p>
+                <p><strong>Website:</strong> {{ selectedDrive.company?.website || '—' }}</p>
+              </div>
+              <div class="col-md-7">
+                <h6 class="text-uppercase text-secondary">Drive Details</h6>
+                <p><strong>Title:</strong> {{ selectedDrive.title }}</p>
+                <p><strong>Description:</strong> {{ selectedDrive.description || '—' }}</p>
+                <p><strong>Eligibility:</strong> {{ selectedDrive.eligibility || '—' }}</p>
+                <p><strong>Drive Date:</strong> {{ formatDate(selectedDrive.drive_date) }}</p>
+                <p><strong>Created:</strong> {{ formatDate(selectedDrive.created_at) }}</p>
+                <p><strong>Application Deadline:</strong> {{ formatDate(selectedDrive.application_deadline) }}</p>
+              </div>
+            </div>
 
             <div class="mt-3">
               <label class="form-label">Set status</label>
@@ -116,6 +174,34 @@
                   <label class="form-check-label" :for="`drive-status-${mode}`">{{ mode }}</label>
                 </div>
               </div>
+            </div>
+
+            <div class="mt-4">
+              <h6 class="mb-3">Applicants</h6>
+              <div v-if="driveReviewApplicants.length" class="table-responsive">
+                <table class="table table-sm mb-0">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th>Status</th>
+                      <th class="text-end">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="applicant in driveReviewApplicants" :key="applicant.application_id">
+                      <td>{{ applicant.student_name || 'Unknown' }}</td>
+                      <td>{{ applicant.student_email || '—' }}</td>
+                      <td>{{ applicant.status }}</td>
+                      <td class="text-end">
+                        <button class="btn btn-sm btn-outline-primary me-1" @click="lookUser({ id: applicant.student_id, name: applicant.student_name, email: applicant.student_email, role: 'student' }, 'student')">Profile</button>
+                        <button v-if="applicant.resume_file" class="btn btn-sm btn-outline-secondary" @click="openResumeUrl(applicant.resume_file, applicant.student_id)">Resume</button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div v-else class="text-muted">No students have applied to this drive yet.</div>
             </div>
 
             <div class="mt-3 d-flex gap-2">
@@ -139,12 +225,16 @@
             </div>
             <div class="list-group application-list">
               <div v-for="app in filteredApplications" :key="app.id" class="list-group-item">
-                <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex justify-content-between align-items-start gap-2">
                   <div>
                     <strong>#{{ app.id }}</strong> Student ID: {{ app.student_id }}<br />
-                    Drive ID: {{ app.drive_id }}
+                    Drive: {{ app.drive_title || app.drive_id }}<br />
+                    Company: {{ app.company_name || '—' }}
                   </div>
-                  <span class="badge bg-secondary">{{ app.status }}</span>
+                  <div class="text-end">
+                    <span class="badge bg-secondary mb-2 d-block">{{ app.status }}</span>
+                    <button class="btn btn-sm btn-outline-primary" @click="openApplicationDetails(app)">View Detail</button>
+                  </div>
                 </div>
               </div>
               <div v-if="filteredApplications.length === 0" class="list-group-item text-center text-muted">
@@ -260,32 +350,70 @@
       </div>
     </div>
 
-    <div v-if="selectedUser" class="card mb-4 border-primary">
-      <div class="card-header">User Details</div>
-      <div class="card-body">
-        <div v-if="selectedUser.loading" class="text-muted">Loading details...</div>
-        <div v-else>
-          <p><strong>Name:</strong> {{ selectedUser.name }}</p>
-          <p><strong>Email:</strong> {{ selectedUser.email }}</p>
-          <p><strong>Role:</strong> {{ selectedUser.role }}</p>
-          <p><strong>Status:</strong> {{ selectedUser.blacklisted ? 'Blocklisted' : (selectedUser.is_active ? 'Active' : 'Inactive') }}</p>
-          <div v-if="selectedUser.profile && Object.keys(selectedUser.profile).length" class="mt-3">
-            <h6>Profile</h6>
-            <pre class="small mb-0">{{ JSON.stringify(selectedUser.profile, null, 2) }}</pre>
+    <div class="mb-4">
+      <NotificationCenter />
+    </div>
+
+    <div v-if="selectedUser" class="modal d-block bg-dark bg-opacity-50" tabindex="-1">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">User Details</h5>
+            <button class="btn-close" @click="selectedUser = null"></button>
           </div>
-          <div v-if="selectedUser.company" class="mt-3">
-            <h6>Company Details</h6>
-            <p class="mb-1"><strong>Company:</strong> {{ selectedUser.company.name }}</p>
-            <p class="mb-1"><strong>Approved:</strong> {{ selectedUser.company.approved ? 'Yes' : 'No' }}</p>
-            <p class="mb-0"><strong>Website:</strong> {{ selectedUser.company.website || '—' }}</p>
+          <div class="modal-body">
+            <div v-if="selectedUser.loading" class="text-muted">Loading details...</div>
+            <div v-else>
+              <p><strong>Name:</strong> {{ selectedUser.name }}</p>
+              <p><strong>Email:</strong> {{ selectedUser.email }}</p>
+              <p><strong>Role:</strong> {{ selectedUser.role }}</p>
+              <p><strong>Status:</strong> {{ selectedUser.blacklisted ? 'Blocklisted' : (selectedUser.is_active ? 'Active' : 'Inactive') }}</p>
+              <div v-if="selectedUser.profile && Object.keys(selectedUser.profile).length" class="mt-3">
+                <h6>Profile</h6>
+                <pre class="small mb-0">{{ JSON.stringify(selectedUser.profile, null, 2) }}</pre>
+              </div>
+              <div v-if="selectedUser.company" class="mt-3">
+                <h6>Company Details</h6>
+                <p class="mb-1"><strong>Company:</strong> {{ selectedUser.company.name }}</p>
+                <p class="mb-1"><strong>Approved:</strong> {{ selectedUser.company.approved ? 'Yes' : 'No' }}</p>
+                <p class="mb-0"><strong>Website:</strong> {{ selectedUser.company.website || '—' }}</p>
+              </div>
+              <div v-if="selectedUser.resume_file" class="mt-3">
+                <button class="btn btn-outline-secondary btn-sm" @click="openUserResume(selectedUser.id)">View Resume</button>
+              </div>
+            </div>
           </div>
-          <div v-if="selectedUser.resume_file" class="mt-3">
-            <button class="btn btn-outline-secondary btn-sm" @click="openUserResume(selectedUser.id)">View Resume</button>
+          <div class="modal-footer justify-content-between">
+            <div>
+              <button class="btn btn-outline-danger btn-sm" @click="blacklistUser(selectedUser.id)">Blocklist</button>
+              <button class="btn btn-outline-success btn-sm ms-2" @click="approveUser(selectedUser.id)">Approve</button>
+              <button class="btn btn-outline-warning btn-sm ms-2" @click="rejectUser(selectedUser.id)">Reject</button>
+            </div>
+            <button class="btn btn-secondary" @click="selectedUser = null">Close</button>
           </div>
-          <div class="mt-3 d-flex gap-2">
-            <button class="btn btn-outline-danger btn-sm" @click="blocklistUser(selectedUser.id)">Blocklist</button>
-            <button class="btn btn-outline-success btn-sm" @click="approveUser(selectedUser.id)">Approve</button>
-            <button class="btn btn-outline-secondary btn-sm" @click="selectedUser = null">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="selectedApplication" class="modal d-block bg-dark bg-opacity-50" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Application Details</h5>
+            <button class="btn-close" @click="selectedApplication = null"></button>
+          </div>
+          <div class="modal-body">
+            <p><strong>Student:</strong> {{ selectedApplication.student_name || '—' }}</p>
+            <p><strong>Email:</strong> {{ selectedApplication.student_email || '—' }}</p>
+            <p><strong>Drive:</strong> {{ selectedApplication.drive_title || '—' }}</p>
+            <p><strong>Company:</strong> {{ selectedApplication.company_name || '—' }}</p>
+            <p><strong>Status:</strong> {{ selectedApplication.status }}</p>
+            <p><strong>Applied On:</strong> {{ formatDate(selectedApplication.applied_on) }}</p>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-outline-primary btn-sm" @click="showApplicationStudentProfile(selectedApplication)">View Student Profile</button>
+            <button class="btn btn-outline-secondary btn-sm" @click="openApplicationResume(selectedApplication)">View Resume</button>
+            <button class="btn btn-secondary" @click="selectedApplication = null">Close</button>
           </div>
         </div>
       </div>
@@ -296,8 +424,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import api, { setAuthToken } from '../services/api'
+import Chart from 'chart.js/auto'
+import NotificationCenter from './NotificationCenter.vue'
 
 const summary = ref({
   total_students: 0,
@@ -323,6 +453,12 @@ const activeDriveMode = ref('All')
 const selectedDrive = ref(null)
 const selectedDriveStatus = ref('Pending')
 const selectedUser = ref(null)
+const selectedApplication = ref(null)
+const driveReviewApplicants = ref([])
+const chartCanvas = ref(null)
+const companyChartCanvas = ref(null)
+const chartInstance = ref(null)
+const companyChartInstance = ref(null)
 
 const cards = computed(() => [
   { label: 'Students', value: summary.value.total_students },
@@ -331,6 +467,20 @@ const cards = computed(() => [
   { label: 'Pending Companies', value: summary.value.pending_companies },
   { label: 'Pending Drives', value: summary.value.pending_drives },
 ])
+
+const chartCounts = computed(() => {
+  const pending = allDrives.value.filter((drive) => drive.status === 'Pending').length
+  const approved = allDrives.value.filter((drive) => drive.status === 'Approved').length
+  const rejected = allDrives.value.filter((drive) => drive.status === 'Rejected').length
+  return { pending, approved, rejected }
+})
+
+const companyChartCounts = computed(() => {
+  const pending = companies.value.filter((company) => company.approved === false && company.is_active !== false && !company.blacklisted).length
+  const approved = companies.value.filter((company) => company.approved === true).length
+  const rejected = companies.value.filter((company) => company.approved === false && company.is_active === false).length
+  return { pending, approved, rejected }
+})
 
 const filteredDrives = computed(() => {
   if (activeDriveMode.value === 'All') {
@@ -382,6 +532,47 @@ function formatDate(value) {
 function openDriveDetails(drive) {
   selectedDrive.value = { ...drive }
   selectedDriveStatus.value = drive.status || 'Pending'
+  loadDriveReview(drive.drive_id)
+}
+
+async function loadDriveReview(driveId) {
+  try {
+    const res = await api.get(`/admin/drives/${driveId}/details`)
+    const detailPayload = res.data || {}
+    driveReviewApplicants.value = detailPayload.applicants || []
+    if (selectedDrive.value) {
+      selectedDrive.value = {
+        ...selectedDrive.value,
+        ...detailPayload.drive,
+        company: detailPayload.company || null,
+        company_name: detailPayload.company?.name || selectedDrive.value.company_name || 'Unknown',
+      }
+    }
+  } catch (e) {
+    driveReviewApplicants.value = []
+  }
+}
+
+function openApplicationDetails(app) {
+  selectedApplication.value = app
+}
+
+function showApplicationStudentProfile(app) {
+  if (!app?.student_id) return
+  lookUser({ id: app.student_id, name: app.student_name, email: app.student_email, role: 'student' }, 'student')
+}
+
+function openApplicationResume(app) {
+  if (!app?.student_id) return
+  window.open(`/api/admin/users/${app.student_id}/resume`, '_blank')
+}
+
+function openResumeUrl(filename, userId) {
+  if (!filename) {
+    window.open(`/api/admin/users/${userId}/resume`, '_blank')
+    return
+  }
+  window.open(`/api/admin/users/${userId}/resume`, '_blank')
 }
 
 async function lookUser(user, type) {
@@ -545,6 +736,17 @@ async function approveUser(userId) {
   }
 }
 
+async function rejectUser(userId) {
+  try {
+    await api.post(`/admin/users/${userId}/reject`)
+    notify('User rejected')
+    selectedUser.value = null
+    await refreshAll()
+  } catch (e) {
+    notify(e.response?.data?.message || 'Could not reject user')
+  }
+}
+
 async function generateReport() {
   try {
     const res = await api.get('/admin/report/monthly')
@@ -567,9 +769,56 @@ async function refreshAll() {
   await Promise.all([loadSummary(), loadPendingCompanies(), loadDrives(), loadApplications(), loadHistory(), loadCompanies(companyQuery.value), loadStudents(studentQuery.value)])
 }
 
+function renderChart() {
+  if (!chartCanvas.value) return
+  if (chartInstance.value) {
+    chartInstance.value.destroy()
+  }
+  chartInstance.value = new Chart(chartCanvas.value, {
+    type: 'pie',
+    data: {
+      labels: ['Pending', 'Approved', 'Rejected'],
+      datasets: [{
+        data: [chartCounts.value.pending, chartCounts.value.approved, chartCounts.value.rejected],
+        backgroundColor: ['#f4b400', '#198754', '#dc3545'],
+      }],
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom' } } },
+  })
+}
+
+function renderCompanyChart() {
+  if (!companyChartCanvas.value) return
+  if (companyChartInstance.value) {
+    companyChartInstance.value.destroy()
+  }
+  companyChartInstance.value = new Chart(companyChartCanvas.value, {
+    type: 'pie',
+    data: {
+      labels: ['Pending', 'Approved', 'Rejected'],
+      datasets: [{
+        data: [companyChartCounts.value.pending, companyChartCounts.value.approved, companyChartCounts.value.rejected],
+        backgroundColor: ['#f4b400', '#198754', '#dc3545'],
+      }],
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom' } } },
+  })
+}
+
+watch(chartCounts, () => {
+  nextTick(() => renderChart())
+}, { deep: true })
+
+watch(companyChartCounts, () => {
+  nextTick(() => renderCompanyChart())
+}, { deep: true })
+
 onMounted(() => {
   setAuthToken(localStorage.getItem('ppa_token'))
-  refreshAll()
+  refreshAll().then(() => {
+    renderChart()
+    renderCompanyChart()
+  })
 })
 </script>
 

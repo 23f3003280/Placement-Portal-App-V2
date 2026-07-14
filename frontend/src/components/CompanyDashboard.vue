@@ -1,11 +1,15 @@
 <template>
-  <div class="company-dashboard">
+  <div v-if="profile?.company?.approved" class="company-dashboard">
     <div class="d-flex justify-content-between align-items-start mb-4">
       <div>
         <h4>Company Dashboard</h4>
         <p class="text-muted mb-0">Manage your company profile, placement drives, and student applications.</p>
       </div>
-      <button class="btn btn-outline-secondary btn-sm" @click="loadData">Refresh</button>
+      <div>
+        <router-link to="/user/company-profile" class="btn btn-primary btn-sm me-2">Profile</router-link>
+        <button class="btn btn-outline-secondary btn-sm me-2" @click="loadData">Refresh</button>
+        
+      </div>
     </div>
 
     <div class="row g-4 mb-4">
@@ -20,8 +24,23 @@
           </div>
         </div>
       </div>
-
       <div class="col-md-8">
+        <div class="row g-4">
+          <div class="col-md-4" v-for="card in summaryCards" :key="card.label">
+            <div class="card h-100 text-center">
+              <div class="card-body">
+                <h6 class="text-secondary">{{ card.label }}</h6>
+                <p class="display-6 mb-0">{{ card.value }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="row g-4 mb-4">
+      <div class="col-12">
         <div class="card h-100">
           <div class="card-header d-flex justify-content-between align-items-center">
             <span>Created Placement Drives</span>
@@ -110,22 +129,87 @@
       </div>
     </div>
 
+    <!-- Student Applications moved here -->
+    <div class="row g-4 mt-4">
+      <div class="col-12">
+        <CompanyApplications />
+      </div>
+    </div>
+
+    <!-- Drive History -->
+    <div class="row g-4 mt-4">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header">Drive History</div>
+          <div class="card-body p-0">
+            <table class="table table-sm mb-0">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Status</th>
+                  <th>Applicants</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="drive in driveHistory" :key="drive.drive_id">
+                  <td>{{ drive.title }}</td>
+                  <td>{{ drive.status }}</td>
+                  <td>{{ drive.applicant_count }}</td>
+                </tr>
+                <tr v-if="driveHistory.length === 0">
+                  <td colspan="3" class="text-center py-3 text-muted">No past drives found.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <CreateDrive @created="loadData" />
-    <CompanyApplications />
+    <div class="mt-4">
+      <NotificationCenter />
+    </div>
+  </div>
+  <div v-else class="text-center p-5">
+    <h3>Your account is pending approval from the admin.</h3>
+    <p>You will be able to access the dashboard once your account is verified.</p>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import api from '../services/api'
 import CreateDrive from './CreateDrive.vue'
 import CompanyApplications from './CompanyApplications.vue'
+import NotificationCenter from './NotificationCenter.vue'
 
 const profile = ref({})
 const drives = ref([])
+const applications = ref([])
 const searchQuery = ref('')
 const selectedDrive = ref(null)
 const isEditing = ref(false)
+
+function logout() {
+  localStorage.removeItem('ppa_token')
+  api.defaults.headers.common['Authorization'] = ''
+  // Assuming router is available or injected
+  window.location.href = '/'
+}
+
+const summaryCards = computed(() => [
+  { label: 'Approved Drives', value: drives.value.filter(d => d.status === 'Approved').length },
+  { label: 'Pending Drives', value: drives.value.filter(d => d.status === 'Pending').length },
+  { label: 'Rejected Drives', value: drives.value.filter(d => d.status === 'Rejected').length },
+  { label: 'Total Drives', value: drives.value.length },
+  { label: 'Total Applicants', value: drives.value.reduce((sum, d) => sum + (d.applicant_count || 0), 0) },
+  { label: 'Total Selected', value: applications.value.filter(a => a.status === 'Selected').length },
+])
+
+const driveHistory = computed(() => {
+  return drives.value.filter(d => d.status !== 'Pending' && d.status !== 'Approved')
+})
 
 async function loadProfile() {
   try {
@@ -145,8 +229,17 @@ async function loadDrives() {
   }
 }
 
+async function loadApplications() {
+  try {
+    const res = await api.get('/company/applications')
+    applications.value = res.data
+  } catch (e) {
+    applications.value = []
+  }
+}
+
 async function loadData() {
-  await Promise.all([loadProfile(), loadDrives()])
+  await Promise.all([loadProfile(), loadDrives(), loadApplications()])
 }
 
 function openEdit(drive) {

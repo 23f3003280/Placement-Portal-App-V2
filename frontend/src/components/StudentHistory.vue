@@ -1,6 +1,9 @@
 <template>
   <div class="card mb-4">
-    <div class="card-header">Placement History</div>
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <span>Placement History</span>
+      <button class="btn btn-outline-secondary btn-sm" @click="goBack">Back</button>
+    </div>
     <div class="card-body">
       <div class="list-group">
         <div v-for="item in history" :key="item.id" class="list-group-item">
@@ -23,13 +26,19 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import api from '../services/api'
 
 const history = ref([])
+const router = useRouter()
 
 function formatDate(value) {
   if (!value) return ''
   return new Date(value).toLocaleDateString()
+}
+
+function goBack() {
+  router.back()
 }
 
 async function loadHistory() {

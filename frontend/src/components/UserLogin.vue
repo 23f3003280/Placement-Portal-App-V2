@@ -54,19 +54,31 @@ async function submit() {
   try {
     if (mode.value === 'login') {
       const res = await api.post('/login', { email: email.value, password: password.value })
+      const currentRole = res.data?.role
+      if (currentRole === 'admin') {
+        setAuthToken(null)
+        error.value = 'Admin accounts must use the admin login page.'
+        return
+      }
       const token = res.data.access_token
       setAuthToken(token)
       localStorage.setItem('ppa_token', token)
-      emit('logged', res.data.role)
+      emit('logged', currentRole)
       return
     }
 
     await api.post('/register', { name: name.value, email: email.value, password: password.value, role: role.value })
     const res = await api.post('/login', { email: email.value, password: password.value })
+    const currentRole = res.data?.role || role.value
+    if (currentRole === 'admin') {
+      setAuthToken(null)
+      error.value = 'Admin accounts must use the admin login page.'
+      return
+    }
     const token = res.data.access_token
     setAuthToken(token)
     localStorage.setItem('ppa_token', token)
-    emit('logged', res.data.role)
+    emit('logged', currentRole)
   } catch (e) {
     error.value = e.response?.data?.message || (mode.value === 'login' ? 'Login failed' : 'Registration failed')
   }

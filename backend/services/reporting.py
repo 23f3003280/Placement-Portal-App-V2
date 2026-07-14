@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Dict, List
 
 from models import Application, Company, Drive, User
+from services.notifications import send_mail
 
 
 def build_monthly_report_html() -> str:
@@ -51,6 +52,8 @@ def write_monthly_report_file(output_dir: str | None = None) -> str:
     filename = os.path.join(output_dir, f"monthly_report_{int(datetime.utcnow().timestamp())}.html")
     with open(filename, 'w', encoding='utf-8') as handle:
         handle.write(build_monthly_report_html())
+    recipient = os.getenv('ADMIN_EMAIL', 'admin@institute.edu')
+    send_mail(recipient, 'Monthly Placement Activity Report', 'Please find the monthly placement activity report attached.', filename)
     return filename
 
 

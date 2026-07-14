@@ -1,9 +1,14 @@
 <template>
   <div class="container py-4">
     <div v-if="!isLogged" class="text-center py-5">
-      <div class="spinner-border text-primary mb-3" role="status"></div>
-      <p class="text-muted">Preparing admin dashboard...</p>
-      <div v-if="error" class="text-danger">{{ error }}</div>
+      <div class="mb-4">
+        <h2 class="mb-2">Admin Portal</h2>
+        <p class="text-muted">Sign in with an institute admin account.</p>
+      </div>
+      <div class="mx-auto" style="max-width: 420px; text-align: left;">
+        <AdminLogin @logged="onAdminLogged" />
+      </div>
+      <div v-if="error" class="text-danger mt-3">{{ error }}</div>
     </div>
 
     <div v-else class="admin-shell">
@@ -16,6 +21,7 @@
           <button class="btn btn-outline-primary" :class="{ active: activeTab === 'home' }" @click="activeTab = 'home'">Home</button>
           <button class="btn btn-outline-primary" :class="{ active: activeTab === 'profile' }" @click="activeTab = 'profile'">Profile</button>
           <button class="btn btn-outline-primary" :class="{ active: activeTab === 'about' }" @click="activeTab = 'about'">About</button>
+          <button class="btn btn-outline-danger" @click="isLogged = false; profile = null; error = ''">Logout</button>
         </div>
       </div>
 
@@ -47,11 +53,13 @@
 import { ref, onMounted } from 'vue'
 import api, { setAuthToken } from '../services/api'
 import AdminDashboard from '../components/AdminDashboard.vue'
+import AdminLogin from '../components/AdminLogin.vue'
 
 const isLogged = ref(false)
 const activeTab = ref('home')
 const profile = ref(null)
 const error = ref('')
+
 
 async function loadProfile() {
   try {
@@ -74,23 +82,23 @@ async function autoLogin() {
         return
       }
     } catch (e) {
-      // ignore and fall back to default admin login
+      // ignore and fall back to admin login form
     }
   }
 
-  try {
-    const res = await api.post('/login', {
-      email: 'admin@institute.edu',
-      password: 'adminpass',
-    })
-    if (res.data?.role === 'admin') {
-      setAuthToken(res.data.access_token)
-      localStorage.setItem('ppa_token', res.data.access_token)
-      await loadProfile()
-      isLogged.value = true
-    }
-  } catch (e) {
-    error.value = e.response?.data?.message || 'Unable to access admin panel'
+  isLogged.value = false
+  profile.value = null
+  error.value = ''
+}
+
+function onAdminLogged(role = 'admin') {
+  error.value = ''
+  if (role === 'admin') {
+    isLogged.value = true
+    loadProfile()
+    activeTab.value = 'home'
+  } else {
+    error.value = 'Admin accounts must use the admin login page.'
   }
 }
 

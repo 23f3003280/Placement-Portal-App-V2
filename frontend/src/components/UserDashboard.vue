@@ -25,7 +25,7 @@ const drives = ref([])
 async function loadDrives() {
   try {
     const res = await api.get('/drives')
-    drives.value = res.data
+    drives.value = Array.isArray(res.data) ? res.data.filter((drive) => drive.status === 'Approved' || !drive.status) : []
   } catch (e) {
     drives.value = []
   }

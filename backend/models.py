@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import date, datetime
+
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -41,9 +42,24 @@ class Drive(db.Model):
     title = db.Column(db.String(256), nullable=False)
     description = db.Column(db.Text, nullable=True)
     eligibility = db.Column(db.JSON, nullable=True)
+    drive_date = db.Column(db.Date, nullable=True)
     application_deadline = db.Column(db.DateTime, nullable=True)
-    status = db.Column(db.String(32), default="Pending")  # Pending / Approved / Closed
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    status = db.Column(db.String(32), default="Pending")  # Pending / Approved / Rejected
     extra = db.Column(db.JSON, nullable=True)
+
+
+class HistoryEntry(db.Model):
+    __tablename__ = "history"
+    id = db.Column(db.Integer, primary_key=True)
+    entity_type = db.Column(db.String(64), nullable=False)
+    entity_id = db.Column(db.Integer, nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    user_name = db.Column(db.String(256), nullable=True)
+    user_email = db.Column(db.String(256), nullable=True)
+    action = db.Column(db.String(128), nullable=False)
+    details = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
 class Application(db.Model):
